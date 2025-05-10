@@ -11,6 +11,7 @@ const { authMiddleware } = require("./middlewares/authMiddleware");
 const { bookRouter } = require("./routes/bookRoutes");
 const { roomRouter } = require("./routes/roomRoutes");
 const { reservationRouter } = require("./routes/reservationRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use("/api/user", userRouter);
 app.use("/api/reservations", reservationRouter);
 app.use("/api/library-book", bookRouter);
 app.use("/api/library-room", roomRouter);
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api", awsRouter);
 
 app.use((err, req, res, next) => {
