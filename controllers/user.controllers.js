@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { UserModel } = require("../models/userModel");
+const { UserModel } = require("../models/user.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const registerController = async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
-  if (!name || !email || !password || !role) {
+  if (!name || !email || !password) {
     return next(new Error("Please fill all the fields"));
   }
 
@@ -92,35 +92,6 @@ const logoutController = async (req, res, next) => {
   res.status(200).json({ success: true, msg: "Logout successful", user });
 };
 
-// GET ALL USERS
-const getAllUsers = async (req, res, next) => {
-  const { search } = req.query;
-
-  let searchObj = {};
-  if (search) {
-    searchObj = {
-      $or: [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-      ],
-    };
-  }
-
-  try {
-    const usersFound = await UserModel.find(searchObj)
-      .find({ _id: { $ne: req.user._id } })
-      .select("-password");
-
-    res.json({
-      success: true,
-      result: usersFound,
-    });
-  } catch (err) {
-    console.log("Error in getAllUsers:", err);
-    return next(err);
-  }
-};
-
 // GET SINGLE USER
 const getUser = async (req, res, next) => {
   const userId = req.params.userId || req.user._id;
@@ -142,7 +113,7 @@ const getUser = async (req, res, next) => {
 
     res.json({
       success: true,
-      user: userFound,
+      data: userFound,
     });
   } catch (err) {
     console.log("Error in getUser:", err);
@@ -150,18 +121,85 @@ const getUser = async (req, res, next) => {
   }
 };
 
-const getAllLibrarians = async (req, res, next) => {
+// UPDATE PROFILE
+const updateProfile = async (req, res, next) => {
   try {
-    const librarians = await UserModel.find({ role: "librarian" }).select(
-      "-password"
+    const userId = req.user._id;
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      const error = new Error("User not found");
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    // Allow update of common fields
+    if (req.body.name) {
+      user.name = req.body.name;
+    }
+
+    if (req.body.userPhoto) {
+      user.userPhoto = req.body.userPhoto;
+    }
+
+    if (req.body.description) {
+      user.description = req.body.description;
+    }
+
+    // Optionally allow other common fields here (e.g., email) with validation
+
+    // Role-specific updates
+    if (user.role === "jobseeker") {
+      if (req.body.resume) {
+        if (!user.resume) user.resume = {};
+        Object.assign(user.resume, req.body.resume);
+        // Always set uploadedAt if not provided
+        // if (!user.resume.uploadedAt)
+        user.resume.uploadedAt = new Date().toISOString();
+      }
+      if (req.body.jobPreferences) {
+        if (!user.jobPreferences) user.jobPreferences = {};
+        Object.assign(user.jobPreferences, req.body.jobPreferences);
+      }
+    } else if (user.role === "recruiter") {
+      if (req.body.company) {
+        if (!user.company) user.company = {};
+        Object.assign(user.company, req.body.company);
+      }
+    } else {
+      const error = new Error("Invalid user role");
+      error.statusCode = 400;
+      return next(error);
+    }
+
+    await user.save();
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+
+    // Format date fields as ISO 8601
+    if (updatedUser.resume && updatedUser.resume.uploadedAt) {
+      updatedUser.resume.uploadedAt = new Date(
+        updatedUser.resume.uploadedAt
+      ).toISOString();
+    }
+    if (updatedUser.createdAt) {
+      updatedUser.createdAt = new Date(updatedUser.createdAt).toISOString();
+    }
+    if (updatedUser.updatedAt) {
+      updatedUser.updatedAt = new Date(updatedUser.updatedAt).toISOString();
+    }
+
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || "your-secret-key"
     );
 
     res.json({
       success: true,
-      data: librarians,
+      msg: "Profile updated successfully",
+      data: { ...updatedUser, token },
     });
   } catch (err) {
-    console.log("Error in getAllLibrarians:", err);
+    console.log("Error in updateProfile:", err);
     return next(err);
   }
 };
@@ -170,7 +208,6 @@ module.exports = {
   registerController,
   loginController,
   logoutController,
-  getAllUsers,
   getUser,
-  getAllLibrarians,
+  updateProfile,
 };

@@ -5,15 +5,24 @@ const cors = require("cors");
 //connection with mongodb database;
 const { connection } = require("./config/db");
 //routes
-const { userRouter } = require("./routes/userRoutes");
-const { awsRouter } = require("./routes/awsRoutes");
+const { userRouter } = require("./routes/user.routes");
+const { jobPostRouter } = require("./routes/jobpost.routes");
+const { awsRouter } = require("./routes/aws.routes");
+const { applicationRouter } = require("./routes/application.routes");
 const { authMiddleware } = require("./middlewares/authMiddleware");
-const { bookRouter } = require("./routes/bookRoutes");
-const { roomRouter } = require("./routes/roomRoutes");
-const { reservationRouter } = require("./routes/reservationRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
+const dashboardRouter = require("./routes/dashboard.routes");
+const aiRouter = require("./routes/ai.routes");
 
 const app = express();
+
+// app.use(
+//   cors({
+//     origin: "http://localhost:5173", // Your frontend URL (Vite's default port)
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
 
 app.use(
   cors({
@@ -26,16 +35,17 @@ app.use(
 
 app.use(express.json());
 
-app.get("/", authMiddleware, (req, res) => {
+app.get("/", (req, res) => {
   res.json({ message: "working" });
 });
 
 //routes
 app.use("/api/user", userRouter);
-app.use("/api/reservations", reservationRouter);
-app.use("/api/library-book", bookRouter);
-app.use("/api/library-room", roomRouter);
-app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/jobposts", jobPostRouter);
+app.use("/api/applications", applicationRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/ai", aiRouter);
+
 app.use("/api", awsRouter);
 
 app.use((err, req, res, next) => {

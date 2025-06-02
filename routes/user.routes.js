@@ -5,10 +5,9 @@ const {
   registerController,
   loginController,
   logoutController,
-  getAllUsers,
   getUser,
-  getAllLibrarians,
-} = require("../controllers/userControllers");
+  updateProfile,
+} = require("../controllers/user.controllers");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
 //register user -> /api/user/register
@@ -19,14 +18,13 @@ userRouter.post("/login", loginController);
 //logout user -> /api/user/logout
 userRouter.post("/logout", authMiddleware, logoutController);
 
-//get users -> /api/user/
-userRouter.get("/", authMiddleware, getAllUsers);
 
-//get users librarians -> /api/user/
-userRouter.get("/all-libraries", authMiddleware, getAllLibrarians);
 
 //get single user -> /api/user/profile
 userRouter.get("/profile/:userId", authMiddleware, getUser);
+
+// update user profile -> /api/user/profile
+userRouter.put("/profile", authMiddleware, updateProfile);
 
 module.exports = {
   userRouter,

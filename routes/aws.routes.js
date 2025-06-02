@@ -1,5 +1,5 @@
 const express = require("express");
-const { awsCtrl } = require("../controllers/awsCtrl");
+const { awsCtrl } = require("../controllers/aws.ctrl");
 const { authMiddleware } = require("../middlewares/authMiddleware");
 
 const awsRouter = express.Router();
